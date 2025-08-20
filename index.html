@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brotchi — Jouets 3D éco-responsables</title>
+  <style>
+    :root{--jack:#ef7d0f;--piair:#7ec084;--pol:#7b5ea5;--text:#000;--bg:#fff;--dark-bg:#363f46;--dark-text:#fff}
+    *{box-sizing:border-box}body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--text)}
+    header,footer{padding:20px;text-align:center;background:#f0f0f0;position:relative}
+    .header-left{position:absolute;top:20px;left:20px}.header-right{position:absolute;top:20px;right:20px;display:flex;align-items:center;gap:15px}
+    nav a{color:inherit;margin:0 10px;text-decoration:none;font-weight:700;cursor:pointer}
+    img{max-width:100%;height:auto}.container{max-width:1000px;margin:0 auto;padding:20px}
+    h1,h2{text-align:center}.catalogue{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-top:20px}
+    .product{border-radius:12px;overflow:hidden;color:#000;cursor:pointer;transition:.3s}.product:hover{transform:scale(1.05)}
+    .product-info{padding:10px;background:#fff;transition:.3s}
+    .jack{background:var(--jack)}.piair{background:var(--piair)}.pol{background:var(--pol)}
+    section{display:none}.active{display:block}
+    .modal{display:none;position:fixed;z-index:1000;inset:0;background:rgba(0,0,0,.6)}
+    .modal-content{background:#fff;margin:5% auto;padding:20px;border-radius:12px;max-width:500px;position:relative;text-align:center}
+    .close{position:absolute;top:10px;right:15px;font-size:24px;font-weight:700;cursor:pointer}
+    .cart{position:relative;cursor:pointer}.cart::after{content:attr(data-count);position:absolute;top:-8px;right:-8px;background:red;color:#fff;font-size:12px;padding:2px 6px;border-radius:50%;display:none}.cart.has-items::after{display:block}
+    #cartModal .modal-content{max-width:400px;text-align:left}#cartModal ul{list-style:none;padding:0}#cartModal li{margin:10px 0;padding:5px 0;border-bottom:1px solid #ddd}
+    #loginModal .modal-content{max-width:400px}#loginModal input{width:90%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:6px}#loginModal button{padding:10px 20px;border:none;border-radius:6px;background:var(--jack);color:#fff;cursor:pointer;margin:5px 0}
+    .hero-image{display:block;margin:30px auto;max-width:800px;width:100%;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,.2)}
+    body.dark-mode{background:var(--dark-bg);color:var(--dark-text)}body.dark-mode header,body.dark-mode footer{background:#2a2f34;color:var(--dark-text)}body.dark-mode .product-info{background:#444;color:#fff}
+
+    /* === Carrousel === */
+    .carousel{
+      position:relative;
+      margin:10px auto;
+      max-width:500px;
+      overflow:hidden;
+    }
+    .carousel img{
+      width:100%;
+      height:400px; /* hauteur fixe pour toutes les images */
+      object-fit:contain; /* garde le ratio sans rogner */
+      border-radius:12px;
+      user-select:none;
+      -webkit-user-drag:none;
+      background:#f9f9f9;
+    }
+    .carousel-nav{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:40px;height:40px;
+      border:none;border-radius:50%;
+      background:rgba(0,0,0,.5);
+      color:#fff;font-size:22px;font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;
+    }
+    .carousel-nav.prev{ left:8px; }
+    .carousel-nav.next{ right:8px; }
+    .carousel-nav:hover{ background:rgba(0,0,0,.65); }
+
+    /* === Video responsive (ajout) === */
+    .video-wrapper{
+      position:relative;
+      max-width:800px;
+      margin:24px auto 0;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 4px 15px rgba(0,0,0,.2);
+      background:#000;
+      /* 16:9 */
+      padding-top:56.25%;
+    }
+    .video-wrapper video{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      display:block;
+    }
+    .video-fallback{
+      text-align:center;
+      font-size:14px;
+      opacity:.8;
+      margin-top:8px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-left"><button class="dark-toggle" onclick="toggleDarkMode()">🌙</button></div>
+  <img id="logo" src="2Brotchi noir.png" alt="Logo Brotchi" style="height:60px"/>
+  <nav>
+    <a onclick="showSection('accueil')">Accueil</a>
+    <a onclick="showSection('boutique')">Boutique</a>
+    <a onclick="showSection('apropos')">À propos</a>
+    <a id="compteLink" onclick="showSection('compte')" style="display:none">Mon compte</a>
+  </nav>
+  <div class="header-right">
+    <a onclick="openLogin()">Se connecter</a>
+    <div class="cart" id="cartIcon" data-count="0" onclick="openCart()">🛒</div>
+  </div>
+</header>
+
+<main class="container">
+  <section id="accueil" class="active">
+    <h1>Bienvenue chez Brotchi</h1>
+    <p style="text-align:center;max-width:600px;margin:auto">Brotchi crée des jouets uniques imprimés en 3D à partir de plastique recyclé.</p>
+    <img src="trio.png" alt="Les trois personnages Brotchi" class="hero-image"/>
+    <img id="homePresentation" alt="Présentation de base" class="hero-image"/>
+
+    <!-- ===== Lecteur vidéo ajouté ===== -->
+    <div class="video-wrapper" id="homeVideoWrap">
+      <video id="homeVideo" controls playsinline preload="metadata" poster="">
+        <!-- Les <source> sont gérés par le script pour tester plusieurs chemins -->
+        Votre navigateur ne supporte pas la vidéo HTML5.
+      </video>
+    </div>
+    <div id="homeVideoMsg" class="video-fallback" aria-live="polite"></div>
+    <!-- ================================ -->
+  </section>
+
+  <section id="boutique">
+    <h2>Catalogue</h2>
+    <div class="catalogue">
+      <div class="product jack" onclick="openModal('Jack','orange mockup.png','Personnage en orange vif, audacieux et énergique.')">
+        <img src="orange mockup.png" alt="Jack"/><div class="product-info"><h3>Jack</h3><p>Personnage en orange vif.</p><strong>€45</strong></div>
+      </div>
+      <div class="product piair" onclick="openModal('Piair','vert mockup.png','Personnage en vert menthe, doux et créatif.')">
+        <img src="vert mockup.png" alt="Piair"/><div class="product-info"><h3>Piair</h3><p>Vert menthe, créatif.</p><strong>€45</strong></div>
+      </div>
+      <div class="product pol" onclick="openModal('Pol','violet mockup.png','Personnage en violet, mystérieux et original.')">
+        <img src="violet mockup.png" alt="Pol"/><div class="product-info"><h3>Pol</h3><p>Violet, original.</p><strong>€45</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="apropos">
+    <h2>À propos</h2>
+    <p style="max-width:700px;margin:auto;text-align:center">Nous donnons une seconde vie au plastique grâce à l’impression 3D.</p>
+    <div style="text-align:center;margin-top:20px"><img src="printed.png" alt="Atelier impression 3D" style="max-width:400px;border-radius:12px"/></div>
+  </section>
+
+  <section id="compte">
+    <h2>Mon compte</h2>
+    <p><strong>Nom :</strong> <span id="compteNom"></span></p>
+    <p><strong>Prénom :</strong> <span id="comptePrenom"></span></p>
+    <p><strong>Email :</strong> <span id="compteEmail"></span></p>
+    <p><strong>Adresse postale :</strong> <span id="compteAdresse">Non renseignée</span></p>
+    <div style="display:flex;gap:8px;justify-content:center;margin:.5rem 0">
+      <input id="newAdresse" placeholder="Nouvelle adresse" style="flex:1;max-width:320px"/>
+      <button onclick="updateAdresse()">Mettre à jour</button>
+      <button onclick="logout()">Se déconnecter</button>
+    </div>
+    <h3>Mes commandes</h3>
+    <ul id="compteCommandes"></ul>
+  </section>
+</main>
+
+<!-- Modals -->
+<div id="productModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">×</span>
+    <h2 id="modalTitle"></h2>
+
+    <div class="carousel" id="modalCarousel">
+      <button class="carousel-nav prev" id="prevSlide" onclick="prevSlide()">‹</button>
+      <img id="modalSlide" alt="Produit"/>
+      <button class="carousel-nav next" id="nextSlide" onclick="nextSlide()">›</button>
+    </div>
+
+    <p><strong>45€</strong></p>
+    <p id="modalDescription"></p>
+    <button onclick="addToCart()">Ajouter au panier</button>
+  </div>
+</div>
+
+<div id="cartModal" class="modal"><div class="modal-content"><span class="close" onclick="toggleModal('cartModal',0)">×</span><h2>Votre panier</h2><ul id="cartItems"></ul><p><strong>Total : <span id="cartTotal">0€</span></strong></p></div></div>
+<div id="loginModal" class="modal"><div class="modal-content"><span class="close" onclick="toggleModal('loginModal',0)">×</span><h2 id="loginTitle">Connexion</h2><input id="firstname" placeholder="Prénom" style="display:none"/><input id="lastname" placeholder="Nom" style="display:none"/><input id="email" type="email" placeholder="Adresse email"/><input id="password" type="password" placeholder="Mot de passe"/><button id="loginBtn" onclick="login()">Se connecter</button><button onclick="showSignup()">S'inscrire</button></div></div>
+
+<footer>
+  <p>© 2025 Brotchi — Jouets éco-responsables</p>
+  <p>
+    <a href="https://www.instagram.com/brotchi_official/" target="_blank" rel="noopener noreferrer">Instagram : @brotchi_official</a><br>
+    <a href="mailto:brotchiofficial@gmail.com">Contact : brotchiofficial@gmail.com</a>
+  </p>
+</footer>
+
+<script>
+  const qs=s=>document.querySelector(s), qsa=s=>[...document.querySelectorAll(s)];
+  let cart=[], users=[], currentUser=null;
+
+  function showSection(id){qsa('main section').forEach(s=>s.classList.remove('active')); qs('#'+id).classList.add('active')}
+  function toggleModal(id,show=1){qs('#'+id).style.display=show?'block':'none'}
+
+  // Carrousel
+  let modalSlides=[], modalIndex=0;
+
+  function renderModalSlide(){
+    const img = qs('#modalSlide');
+
+    // Affiche/masque les flèches selon la position
+    qs('#prevSlide').style.display = (modalIndex>0)?'flex':'none';
+    qs('#nextSlide').style.display = (modalIndex<modalSlides.length-1)?'flex':'none';
+
+    // Charge l'image courante
+    const src = modalSlides[modalIndex];
+    img.onerror = null;
+    img.src = src;
+
+    // Si l'image ne se charge pas, on essaie d'autres extensions (.jpg, .jpeg, .webp)
+    img.onerror = () => {
+      const tryFallbacks = (base, exts, i=0) => {
+        if (i >= exts.length) {
+          // Si c'est la 2e image (présentation) qui manque, on la retire du carrousel
+          if (modalIndex > 0) {
+            modalSlides.splice(modalIndex,1);
+            modalIndex = Math.max(0, Math.min(modalIndex, modalSlides.length-1));
+            renderModalSlide();
+          }
+          return;
+        }
+        img.onerror = () => tryFallbacks(base, exts, i+1);
+        img.src = base + exts[i];
+      };
+
+      // Détecte si on a déjà une extension, sinon on essaie une liste
+      const m = src.match(/^(.*)\.(png|jpg|jpeg|webp)$/i);
+      if (m) {
+        // On garde la même base et on teste une liste d'extensions alternatives
+        const base = m[1];
+        const current = m[2].toLowerCase();
+        const all = ['png','jpg','jpeg','webp'];
+        const order = all.filter(x=>x!==current); // essaie les autres
+        tryFallbacks(base, order.map(e=>'.'+e));
+      } else {
+        // Pas d'extension explicite: on essaie toutes les classiques
+        tryFallbacks(src, ['.png','.jpg','.jpeg','.webp']);
+      }
+    };
+  }
+  function nextSlide(){ if(modalIndex<modalSlides.length-1){ modalIndex++; renderModalSlide(); } }
+  function prevSlide(){ if(modalIndex>0){ modalIndex--; renderModalSlide(); } }
+
+  function openModal(title,img,desc){
+    qs('#modalTitle').textContent=title;
+    qs('#modalDescription').textContent=desc;
+
+    // 2e image située dans le dossier "Photo" et nommée "Presentation jack/piair/pol"
+    const pres = "Photo/Presentation " + title.toLowerCase() + ".png";
+
+    modalSlides=[img, pres];
+    modalIndex=0;
+    renderModalSlide();
+    toggleModal('productModal',1);
+  }
+  function closeModal(){toggleModal('productModal',0)}
+
+  function addToCart(){const name=qs('#modalTitle').textContent; cart.push({name,price:45}); updateCartIcon(); closeModal(); if(currentUser){currentUser.commandes.push(name+" - 45€"); remplirMonCompte();}}
+  function updateCartIcon(){const el=qs('#cartIcon'); el.dataset.count=cart.length; el.classList.toggle('has-items',cart.length>0)}
+  function openCart(){const list=qs('#cartItems'); list.innerHTML=''; let total=0; cart.forEach(i=>{const li=document.createElement('li'); li.textContent=`${i.name} - ${i.price}€`; list.append(li); total+=i.price}); qs('#cartTotal').textContent=total+'€'; toggleModal('cartModal',1)}
+  const closeCart=()=>toggleModal('cartModal',0);
+  function openLogin(){qs('#loginTitle').textContent='Connexion'; qs('#firstname').style.display='none'; qs('#lastname').style.display='none'; qs('#loginBtn').style.display='inline'; qs('#email').value=''; qs('#password').value=''; toggleModal('loginModal',1)}
+  const closeLogin=()=>toggleModal('loginModal',0);
+  function login(){const email=qs('#email').value, password=qs('#password').value; const u=users.find(x=>x.email===email&&x.password===password); if(u){currentUser=u; alert(`Bienvenue ${u.firstname} ${u.lastname} !`); closeLogin(); qs('#compteLink').style.display='inline'; remplirMonCompte();} else alert('Identifiants incorrects ou compte inexistant.')}
+  function showSignup(){const t=qs('#loginTitle'); const f=qs('#firstname'), l=qs('#lastname'), e=qs('#email'), p=qs('#password'); if(t.textContent==='Connexion'){t.textContent='Inscription'; f.style.display=l.style.display='block'; qs('#loginBtn').style.display='none';} else {const firstname=f.value.trim(), lastname=l.value.trim(), email=e.value.trim(), password=p.value; if(firstname&&lastname&&email&&password){ if(users.some(u=>u.email===email)) return alert('Cet email est déjà inscrit.'); users.push({firstname,lastname,email,password,adresse:'',commandes:[]}); alert('Inscription réussie ! Vous pouvez vous connecter.'); t.textContent='Connexion'; f.style.display=l.style.display='none'; qs('#loginBtn').style.display='inline'; } else alert('Veuillez remplir tous les champs.')}} 
+  function remplirMonCompte(){if(!currentUser) return; qs('#compteNom').textContent=currentUser.lastname; qs('#comptePrenom').textContent=currentUser.firstname; qs('#compteEmail').textContent=currentUser.email; qs('#compteAdresse').textContent=currentUser.adresse||'Non renseignée'; const ul=qs('#compteCommandes'); ul.innerHTML=''; currentUser.commandes.forEach(c=>{const li=document.createElement('li'); li.textContent=c; ul.append(li)})}
+  function updateAdresse(){const a=qs('#newAdresse').value.trim(); if(currentUser && a){currentUser.adresse=a; qs('#newAdresse').value=''; remplirMonCompte(); alert('Adresse mise à jour !')}}
+  function logout(){currentUser=null; qs('#compteLink').style.display='none'; showSection('accueil'); alert('Déconnecté.')} 
+  function toggleDarkMode(){document.body.classList.toggle('dark-mode'); qs('#logo').src=document.body.classList.contains('dark-mode')?'2Brotchi blanc.png':'2Brotchi noir.png'}
+  window.onclick=e=>{['productModal','loginModal','cartModal'].forEach(id=>{const m=qs('#'+id); if(e.target===m) toggleModal(id,0)})}
+
+  // Charger l'image de présentation de base avec fallback d'extensions
+  (function(){
+    const img = document.getElementById('homePresentation');
+    if(!img) return;
+    const base = 'Photo/Presentation de base';
+    const exts = ['.png','.jpg','.jpeg','.webp'];
+    let i=0;
+    const tryNext=()=>{
+      if(i>=exts.length) return;
+      img.onerror=()=>{i++;tryNext();};
+      img.src=base+exts[i];
+    };
+    tryNext();
+  })();
+
+  /* ====== Chargement robuste de la vidéo d'accueil (ajout) ======
+     Essaie différentes écritures du chemin :
+     - Dossier "Vidéo" avec accent / "Video" sans accent
+     - Nom "Vidéo Brotchi.mp4" avec espace, encodé (%20) et accent encodé (%C3%A9)
+     - Variante avec tiret "Video-Brotchi.mp4" si tu préfères renommer plus tard
+  */
+  (function(){
+    const video = document.getElementById('homeVideo');
+    const msg   = document.getElementById('homeVideoMsg');
+    if(!video) return;
+
+    const candidates = [
+      // Dossier avec accent + nom avec accent et espace
+      'Vidéo/Vidéo Brotchi.mp4',
+      'Vidéo/Vidéo%20Brotchi.mp4',
+      'Vid%C3%A9o/Vid%C3%A9o%20Brotchi.mp4',
+
+      // Dossier avec accent + nom sans accent
+      'Vidéo/Video Brotchi.mp4',
+      'Vidéo/Video%20Brotchi.mp4',
+
+      // Dossier sans accent + nom avec accent
+      'Video/Vidéo Brotchi.mp4',
+      'Video/Vidéo%20Brotchi.mp4',
+      'Video/Vid%C3%A9o%20Brotchi.mp4',
+
+      // Dossier sans accent + nom sans accent (classique)
+      'Video/Video Brotchi.mp4',
+      'Video/Video%20Brotchi.mp4',
+
+      // Variante conseillée (sans espace/accents)
+      'Vidéo/Video-Brotchi.mp4',
+      'Video/Video-Brotchi.mp4'
+    ];
+
+    let tried = 0;
+
+    const tryNext = () => {
+      if(tried >= candidates.length){
+        msg.textContent = "Impossible de charger la vidéo. Vérifie le dossier et le nom du fichier (ex : Vidéo/Vidéo Brotchi.mp4).";
+        return;
+      }
+      const path = candidates[tried++];
+      // On recrée la <source> à chaque tentative
+      video.innerHTML = '';
+      const srcEl = document.createElement('source');
+      srcEl.src = path;
+      srcEl.type = 'video/mp4';
+      video.appendChild(srcEl);
+
+      // On écoute les événements : si error -> tentative suivante
+      const onError = () => {
+        // Nettoie et tente le suivant
+        video.removeEventListener('error', onError);
+        video.removeEventListener('loadedmetadata', onLoaded);
+        tryNext();
+      };
+      const onLoaded = () => {
+        video.removeEventListener('error', onError);
+        video.removeEventListener('loadedmetadata', onLoaded);
+        msg.textContent = ""; // ok
+      };
+
+      video.addEventListener('error', onError, { once:true });
+      video.addEventListener('loadedmetadata', onLoaded, { once:true });
+
+      // Force le chargement des métadonnées pour déclencher loadedmetadata/error
+      // Certains navigateurs nécessitent un load() explicite après injection dynamique
+      try { video.load(); } catch(e){}
+    };
+
+    tryNext();
+  })();
+  /* ================== fin ajout vidéo ================== */
+</script>
+</body>
+</html>
