@@ -5,8 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Brotchi — Jouets 3D éco-responsables</title>
   <style>
+    /* === Police personnalisée (fichier à la racine) === */
+    @font-face{
+      font-family: 'AgencyFB';
+      src: url('agencyfb_reg.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root{--jack:#ef7d0f;--piair:#7ec084;--pol:#7b5ea5;--text:#000;--bg:#fff;--dark-bg:#363f46;--dark-text:#fff}
-    *{box-sizing:border-box}body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--text)}
+    *{box-sizing:border-box}body{margin:0;font-family:'AgencyFB',sans-serif;background:var(--bg);color:var(--text)}
     header,footer{padding:20px;text-align:center;background:#f0f0f0;position:relative}
     .header-left{position:absolute;top:20px;left:20px}.header-right{position:absolute;top:20px;right:20px;display:flex;align-items:center;gap:15px}
     nav a{color:inherit;margin:0 10px;text-decoration:none;font-weight:700;cursor:pointer}
@@ -349,7 +358,6 @@
       video.addEventListener('loadedmetadata', onLoaded, { once:true });
 
       // Force le chargement des métadonnées pour déclencher loadedmetadata/error
-      // Certains navigateurs nécessitent un load() explicite après injection dynamique
       try { video.load(); } catch(e){}
     };
 
